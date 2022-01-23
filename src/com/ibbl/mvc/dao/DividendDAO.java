@@ -120,7 +120,7 @@ public class DividendDAO implements SeedsConstants {
                     Double totalDividendOn = 0.0;
                     Double totalDividendAmt = 0.0;
                     while (rs.next()) {
-                        //if (holder == 0) continue;
+
                         long customerId = rs.getLong("customer_id");
                         if (!customerIdList.contains(customerId)) {
                             continue;
