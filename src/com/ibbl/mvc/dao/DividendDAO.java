@@ -31,7 +31,7 @@ public class DividendDAO implements SeedsConstants {
     Connection conn = null;
 
 
-    public ActionResult execute(User user, Long dividendId, Date declareDate,
+    public ActionResult execute(Long projectId,User user, Long dividendId, Date declareDate,
                                 Date executionDate, Date dividendDate, Double profit_rate) throws SQLException {
 
         ActionResult result = new ActionResult();
@@ -42,6 +42,24 @@ public class DividendDAO implements SeedsConstants {
         String execution_date = SDF_yyyy_MM_dd.format(executionDate);
         String receipt_type = /*"%";//*/ "apartment";
         String receipt_status = "Passed";
+
+        conn = MyConnection.getDBConnection2();
+        conn.setAutoCommit(false);
+
+        String apts = "SELECT id as customer_id FROM `abc_user_master` \n" +
+                "WHERE phase_id IN (SELECT id FROM `csd_phase` WHERE  project_id = "+projectId+")\n" +
+                "AND apartment_id IS NOT NULL\n" +
+                "AND user_type = 'customer'";
+
+        Statement aptIdListStm = conn.prepareStatement(apts);
+        ResultSet aptIdListRs = aptIdListStm.executeQuery(apts);
+        List<Long> customerIdList = new ArrayList<>();
+        while (aptIdListRs.next()) {
+            customerIdList.add(aptIdListRs.getLong("customer_id"));
+        }
+        aptIdListRs.close();
+
+
         String where_clause = "WHERE cash_date <= '" + dividend_date + "' AND receipt_type LIKE '" + receipt_type + "' AND status = '" + receipt_status + "'";
 
         int[] LENGTH = VisionConstants.DIVIDEND_BREAKDOWN_INDEX_ARR;
@@ -77,9 +95,6 @@ public class DividendDAO implements SeedsConstants {
 
 
         try {
-            conn = MyConnection.getDBConnection2();
-            conn.setAutoCommit(false);
-
             String duplicate_dividend = "SELECT id FROM ac_share_dividend where id=" + dividendId;
             ResultSet dupRs = conn.prepareStatement(duplicate_dividend).executeQuery(duplicate_dividend);
             int ddc = 0;
@@ -88,12 +103,12 @@ public class DividendDAO implements SeedsConstants {
             }
             if (ddc > 0) {
                 result.setSuccess(false);
-                result.setMsg("No More dividend can't be executed today.");
+                result.setMsg("No More dividend can be executed today.");
             } else {
 
                 String Dividend = "INSERT INTO ac_share_dividend (" +
-                        "id, declare_date, dividend_date, execution_date, profit_rate, total_holder, total_amt_on, total_dividend_amt)" +
-                        "VALUES(" + dividendId + ", '" + declare_date + "','" + dividend_date + "', '" + execution_date + "', " + profit_rate + ", 0, 0.0, 0.0)";
+                        "id, declare_date, dividend_date, execution_date, profit_rate, total_holder, total_amt_on, total_dividend_amt, project_id)" +
+                        "VALUES(" + dividendId + ", '" + declare_date + "','" + dividend_date + "', '" + execution_date + "', " + profit_rate + ", 0, 0.0, 0.0, "+projectId+")";
                 conn.prepareStatement(Dividend).executeUpdate(Dividend);
                 //conn.commit();
                 detailDataSet = conn.prepareStatement(detail_data_sql);
@@ -106,15 +121,18 @@ public class DividendDAO implements SeedsConstants {
                     Double totalDividendAmt = 0.0;
                     while (rs.next()) {
                         //if (holder == 0) continue;
-                        Long customerId = rs.getLong("customer_id");
+                        long customerId = rs.getLong("customer_id");
+                        if (!customerIdList.contains(customerId)) {
+                            continue;
+                        }
                         Double amount = rs.getDouble("amount_on");
                         Double profit = rs.getDouble("profit");
                         if (profit <= 0.0) continue;
                         String details = rs.getString("details");
                         DividendRecord = "INSERT INTO ac_share_dividend_record (customer_id, dividend_on_amt, dividend_amt, dividend_breakup, dividend_id) " +
                                 "VALUES(" + customerId + "," + amount + "," + profit + ", '" + details + "', " + dividendId + ")";
-                        conn.prepareStatement(DividendRecord)
-                                .executeUpdate(DividendRecord);     // TODO.. Open IT
+                       PreparedStatement ps = conn.prepareStatement(DividendRecord);
+                                ps.executeUpdate(DividendRecord);     // TODO.. Open IT
 
                         apt_id_sql = "SELECT apartment_id, plot_id FROM abc_user_master where id = " + customerId;
                         Statement aptIdStm = conn.prepareStatement(apt_id_sql);
@@ -131,7 +149,7 @@ public class DividendDAO implements SeedsConstants {
                                 "receipt_type, customer_id, instrument_no, amount, CASH_DATE, last_dividend_date, STATUS, ENTRY_DATE,\n" +
                                 "note, PAYMENT_METHOD, RECEIPT_DATE, RECEIPT_NO, operator_id, statusUpdateBy_id, apartment_id)\n" +
                                 "VALUES( 'apartment', " + customerId +", 'SD-"+ dividendId + "', " + profit + ", '" + cash_date + "', '" + dividend_date + "', 'Passed'," +
-                                "'" + execution_date + "', 'Share Dividend', 'Adjustment', '" + execution_date + "', '" + mrNo + "'," +
+                                "'" + execution_date + "', 'Share Dividend', 'Dividend', '" + execution_date + "', '" + mrNo + "'," +
                                 operatorId+", " + operatorId+", " + aptId + ")";
                         conn.prepareStatement(MoneyReceipt)
                                 .executeUpdate(MoneyReceipt);
@@ -140,7 +158,7 @@ public class DividendDAO implements SeedsConstants {
                         totalDividendAmt += profit;
                         holder++;
                     }
-
+                    rs.close();
                     String dividend_update_sql = "UPDATE ac_share_dividend " +
                             "SET total_holder = " + holder +
                             ", total_amt_on = " + totalDividendOn +

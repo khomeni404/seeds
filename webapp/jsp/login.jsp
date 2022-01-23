@@ -25,7 +25,7 @@
                             <div class="col-lg-3">
                                 <small>
                                     <i class="">
-                                        <%--<img width="246" height="76" src="http://soft-engine.net/hub/images/seeds.png" alt=""/>--%>
+                                        <%--<img width="246" height="76" src="http://sebd.co/hub/images/seeds.png" alt=""/>--%>
                                         <img width="246" height="76" src="resources/images/seeds-2.png" alt=""/>
                                     </i>
                                     <!--<span style="font-size: 25px; color: black;">Islami Bank Bangladesh Limited</span>-->
@@ -90,7 +90,7 @@
                 <div class="panel-heading text-center" style="background-color: #05800a; min-height: 5%">
                     <span class="bigger-120" style="color: white">
 							<span class="blue bolder"><b>SEEDS</b></span>
-							| all right reserved to www.soft-engine.net &copy; 2003-2004
+							| all right reserved to www.sebd.co &copy; 2003-2004
 						</span>
                 </div>
 

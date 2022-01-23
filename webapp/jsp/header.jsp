@@ -12,7 +12,7 @@
             <div class="col-lg-3">
                 <small>
                     <i class="">
-                        <%--<img width="246" height="76" src="http://soft-engine.net/hub/images/seeds.png" alt=""/>--%>
+                        <%--<img width="246" height="76" src="http://sebd.co/hub/images/seeds.png" alt=""/>--%>
                         <img width="246" height="76" src="../resources/images/seeds-2.png" alt=""/>
                     </i>
                     <!--<span style="font-size: 25px; color: black;">Islami Bank Bangladesh Limited</span>-->

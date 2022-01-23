@@ -9,6 +9,6 @@
 <div class="panel-heading text-center" style="background-color: #05800a; min-height: 5%">
                     <span class="bigger-120" style="color: white">
 							<span class="blue bolder"><b>SEEDS</b></span>
-							| all right reserved to www.soft-engine.net &copy; 2003-2004
+							| all right reserved to www.sebd.co &copy; 2003-2004
 						</span>
 </div>

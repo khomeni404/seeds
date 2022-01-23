@@ -5,18 +5,24 @@ import bd.com.softengine.util.ActionResult;
 import bd.com.softengine.util.DateUtil;
 import com.ibbl.mvc.dao.DataDAO;
 import com.ibbl.mvc.dao.DividendDAO;
+import com.ibbl.mvc.dao.MyConnection;
 import com.ibbl.mvc.util.SeedsConstants;
 import com.ibbl.mvc.util.SessionUtil;
 import com.vision.accounts.model.Dividend;
 import com.vision.accounts.model.DividendRecord;
+import com.vision.csd.model.Project;
 import com.vision.util.VisionConstants;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.ModelAndView;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -37,17 +43,34 @@ import java.util.List;
 @Controller
 @RequestMapping("/dividend/")
 public class ExecuteController {
+
     @RequestMapping(method = RequestMethod.GET, value = "newDividend")
-    public String newDividend(ModelMap model, @RequestParam String msg) {
+    public ModelAndView newDividend(ModelMap model, @RequestParam String msg) throws Exception {
         model.addAttribute("executionDate", new SimpleDateFormat("dd-MM-yyyy").format(new Date()));
         model.addAttribute("id", new Long(SeedsConstants.SDF_yyyyMMdd.format(new Date())));
         model.addAttribute("msg", msg);
-        return "new_dividend";
+        String apts = "SELECT id as id, PROJECT_NAME as name FROM CSD_PROJECT";
+        Connection conn = MyConnection.getDBConnection2();
+
+        Statement aptIdListStm = conn.prepareStatement(apts);
+        ResultSet aptIdListRs = aptIdListStm.executeQuery(apts);
+        List<Project> projects = new ArrayList<>();
+        while (aptIdListRs.next()) {
+            Project p = new Project();
+            p.setId(aptIdListRs.getLong("id"));
+            p.setProjectName(aptIdListRs.getString("name"));
+            projects.add(p);
+        }
+        aptIdListRs.close();
+        conn.close();
+        model.addAttribute("projects", projects);
+        return new ModelAndView("new_dividend");
     }
 
     @RequestMapping(method = RequestMethod.POST, value = "execute")
     public String execute(ModelMap model,
                           //@RequestParam Long dividendId,
+                          @RequestParam Long projectId,
                           @RequestParam String declare_date,
                           @RequestParam String dividend_date,
                           @RequestParam String execution_date,
@@ -64,9 +87,9 @@ public class ExecuteController {
         model.addAttribute("message", "Here I am");
         ActionResult result;
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-        Long dividendId = Long.valueOf(sdf.format(dividendDate));
+        Long dividendId = Long.valueOf(sdf.format(dividendDate)+projectId);
         try {
-            result = new DividendDAO().execute(user, dividendId, declareDate, executionDate, dividendDate, profit_rate);
+            result = new DividendDAO().execute(projectId, user, dividendId, declareDate, executionDate, dividendDate, profit_rate);
         } catch (SQLException e) {
             e.printStackTrace();
             result = new ActionResult();
