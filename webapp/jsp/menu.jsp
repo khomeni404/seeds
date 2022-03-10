@@ -17,6 +17,9 @@
    class="btn btn-md btn-info btn-block"><i class="fa fa-list fa-2x"></i></a>
 
 
+<a href="/seeds/dividend/sms1?msg=yes"
+   class="btn btn-md btn-info btn-block"><i class="fa fa-list fa-2x"></i></a>
+
 
 <a href="/seeds/"
    class="btn btn-md btn-warning btn-block"><i class="fa fa-power-off fa-2x text-danger"></i></a>

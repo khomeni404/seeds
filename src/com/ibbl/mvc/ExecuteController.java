@@ -3,6 +3,9 @@ package com.ibbl.mvc;
 import bd.com.softengine.security.model.User;
 import bd.com.softengine.util.ActionResult;
 import bd.com.softengine.util.DateUtil;
+import co.sebd.ssl.ismsplus.api.ReplyResult;
+import co.sebd.ssl.ismsplus.api.SMSClient;
+import co.sebd.ssl.ismsplus.api.SMSInfo;
 import com.ibbl.mvc.dao.DataDAO;
 import com.ibbl.mvc.dao.DividendDAO;
 import com.ibbl.mvc.dao.MyConnection;
@@ -11,20 +14,24 @@ import com.ibbl.mvc.util.SessionUtil;
 import com.vision.accounts.model.Dividend;
 import com.vision.accounts.model.DividendRecord;
 import com.vision.csd.model.Project;
-import com.vision.util.VisionConstants;
+import org.apache.http.entity.StringEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -87,7 +94,7 @@ public class ExecuteController {
         model.addAttribute("message", "Here I am");
         ActionResult result;
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-        Long dividendId = Long.valueOf(sdf.format(dividendDate)+projectId);
+        Long dividendId = Long.valueOf(sdf.format(dividendDate) + projectId);
         try {
             result = new DividendDAO().execute(projectId, user, dividendId, declareDate, executionDate, dividendDate, profit_rate);
         } catch (SQLException e) {
@@ -122,4 +129,63 @@ public class ExecuteController {
         return "dividend_details";
     }
 
+
+    @RequestMapping(method = RequestMethod.GET, value = "sms1")
+    public ModelAndView sms1(ModelMap model, @RequestParam(required = false) String msg) throws Exception {
+        model.addAttribute("executionDate", new SimpleDateFormat("dd-MM-yyyy").format(new Date()));
+        model.addAttribute("id", new Long(SeedsConstants.SDF_yyyyMMdd.format(new Date())));
+        model.addAttribute("msg", msg);
+        /*String apts = "SELECT id as id, PROJECT_NAME as name FROM CSD_PROJECT";
+        Connection conn = MyConnection.getDBConnection2();
+
+        Statement aptIdListStm = conn.prepareStatement(apts);
+        ResultSet aptIdListRs = aptIdListStm.executeQuery(apts);
+        List<Project> projects = new ArrayList<>();
+        while (aptIdListRs.next()) {
+            Project p = new Project();
+            p.setId(aptIdListRs.getLong("id"));
+            p.setProjectName(aptIdListRs.getString("name"));
+            projects.add(p);
+        }
+        aptIdListRs.close();
+        conn.close();
+        model.addAttribute("projects", projects);*/
+        return new ModelAndView("sms_test");
+    }
+
+    @RequestMapping(method = RequestMethod.POST, value = "sendSms"/*, produces = "text/plain;charset=UTF-8"*/)
+    public ModelAndView sendSms(ModelMap model, @RequestBody String data, HttpServletRequest request, HttpServletResponse response,
+                                @RequestParam String content) {
+        //User user = SessionUtil.getSessionUser();
+
+        System.out.println("content = " + content);
+        try {
+            byte[] bytesInUTF8 = content.getBytes("UTF-8");
+            String stringUsingUTF8 = new String(bytesInUTF8, "UTF-8");
+            System.out.println("stringUsingUTF8 = " + stringUsingUTF8);
+
+            SMSClient smsClient = new SMSClient("jsr7lxvd-zwjeoog-3jtglegupm-bspg5e07-sfg8kze", "ISCOOLBELLBRAND");
+
+            ReplyResult replyResult = smsClient.sendSMS(Collections.singletonList("8801717659287"), content);
+            // smsClient.sendSMS(Collections.singletonList("8801717659287"), request.getParameter("content"));
+            StringEntity se = new StringEntity(data, "utf-8");
+//            smsClient.sendSMS(Collections.singletonList("8801717659287"), StringEscapeUtils.unescapeHtml4(content));
+            //smsClient.sendSMS(Collections.singletonList("8801717659287"), se.getContent().toString());
+           //  smsClient.sendSMS(Collections.singletonList("8801717659287"), "আমার নাম নেই");
+            //   smsClient.sendSMS(Collections.singletonList("8801717659287"), stringUsingUTF8);
+
+            if (replyResult.isSuccess()) {
+                List<SMSInfo> infoList = replyResult.getSmsInfoList();
+                for (SMSInfo i : infoList) {
+                    System.out.println("i.getMsiSdnStatus() = " + i.getMsiSdnStatus());
+                    System.out.println("i.getMsiSdnStatus() = " + i.getSmsType());
+                    System.out.println("i.getMsiSdnStatus() = " + i.getSmsText());
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return new ModelAndView("redirect:/dividend/sms1");
+    }
 }
